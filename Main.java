@@ -11,6 +11,6 @@ public class Main {
         }
 
         Minesweeper ms = new Minesweeper(gridSize,numMines);
-        ms.printMineField();
+        ms.play();
     }
 }
