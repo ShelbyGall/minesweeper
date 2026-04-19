@@ -62,7 +62,7 @@ public class Minesweeper {
     public void populateAdjacentNumbers() {
         // populate the different adjacent cell variations to check for
         // when populating the numbers for adjacent mines
-        String[] searchAreas = {"-1,1","0,1","1,1,","1,0","1,-1","0,-1","-1,-1","-1,0"};
+        String[] searchAreas = {"-1,1","0,1","1,1","1,0","1,-1","0,-1","-1,-1","-1,0"};
 
         // iterate over all the randomly generated mine positions
         for (String pos : this.minePositions) {
@@ -92,6 +92,8 @@ public class Minesweeper {
     }
 
     public void printMineField() {
+        System.out.print("\033[H\033[2J\033[3J");
+        System.out.flush();
         System.out.print("   ");
         for (int i = 65; i < 65 + this.gridSize; i++) {
             System.out.printf("  %c ",(char) i);
@@ -114,6 +116,8 @@ public class Minesweeper {
     }
 
     public void printDisplayBoard() {
+        System.out.print("\033[H\033[2J\033[3J");
+        System.out.flush();
         System.out.print("   ");
         for (int i = 65; i < 65 + this.gridSize; i++) {
             System.out.printf("  %c ",(char) i);
@@ -124,7 +128,13 @@ public class Minesweeper {
         for (int i = 0; i < this.gridSize; i++) {
             System.out.print("   │");
             for (int j = 0; j < this.gridSize; j++) {
-                System.out.printf(" %s%s%s │", colors.get(this.displayBoard[i][j]), this.displayBoard[i][j], RESET);
+                if (this.displayBoard[i][j].equals("_")) {
+                    System.out.printf("%s%s%s│", colors.get(this.displayBoard[i][j]), "   ", RESET);
+                } else if (this.displayBoard[i][j].equals("F")) {
+                    System.out.printf("%s%s%s│", colors.get(this.displayBoard[i][j]), " F ", RESET);
+                } else{
+                    System.out.printf(" %s%s%s │", colors.get(this.displayBoard[i][j]), this.displayBoard[i][j], RESET);
+                }
             }
             System.out.printf(" %d", i);
             if (i == this.gridSize - 1){
@@ -132,6 +142,51 @@ public class Minesweeper {
                 break;
             }
             System.out.println("\n" + separator);
+        }
+    }
+
+    // BFS for revealing adjacent spaces
+    public void reveal(int i, int j) {
+        // populate the different adjacent cell variations to check for
+        // when populating the numbers for adjacent mines
+        String[] searchAreas = {"-1,1","0,1","1,1","1,0","1,-1","0,-1","-1,-1","-1,0"};
+
+        HashSet<String> visited = new HashSet<>();
+        Queue<String> adjCells = new ArrayDeque<>();
+
+        adjCells.add("%d,%d".formatted(i,j));
+        while (!adjCells.isEmpty()) {
+            String currSearch = adjCells.poll();
+            visited.add(currSearch);
+
+            int k = Integer.parseInt(currSearch.split(",")[0]);
+            int l = Integer.parseInt(currSearch.split(",")[1]);
+            
+            this.displayBoard[k][l] = this.mineField[k][l];
+            ++this.displayedCells;
+
+            // if the currSearch cell is a number than I dont want to search around it
+            if (this.mineField[k][l].matches("\\d")) {
+                continue;
+            }
+
+            for (String searchArea : searchAreas) {
+                // get my search area offsets
+                int a = Integer.parseInt(searchArea.split(",")[0]);
+                int b = Integer.parseInt(searchArea.split(",")[1]);
+
+                // get the cells around the currently looked at cell
+                int x = k + a;
+                int y = l + b;
+                // check if the adjacent cells are possible to be accessed in the minefield matrix
+                if ( (this.gridSize > x && x >= 0) && 
+                     (this.gridSize > y && y >= 0) && 
+                    !("*".equals(this.mineField[x][y])) && 
+                    !(visited.contains("%d,%d".formatted(x,y)) ) &&
+                    !(adjCells.contains("%d,%d".formatted(x,y))) ) {
+                    adjCells.add("%d,%d".formatted(x,y));
+                }
+            }
         }
     }
 
@@ -143,7 +198,7 @@ public class Minesweeper {
      */ 
     public boolean selectCell(int i, int j) {
         // if the selected cell is a number
-        if (this.mineField[i][j].matches("\\d+")) {
+        if (this.mineField[i][j].matches("\\d")) {
             this.displayBoard[i][j] = this.mineField[i][j];
             ++this.displayedCells;
             return true;
@@ -154,50 +209,9 @@ public class Minesweeper {
             ++this.displayedCells;
             return false;
         }
-        // else the cell is " " therefore BFS for all adjacent spaces
+        // else the cell is " " therefore reveal for all adjacent spaces
         else {
-            // populate the different adjacent cell variations to check for
-            // when populating the numbers for adjacent mines
-            String[] searchAreas = {"-1,1","0,1","1,1,","1,0","1,-1","0,-1","-1,-1","-1,0"};
-    
-            HashSet<String> visited = new HashSet<>();
-            Queue<String> nextSearches = new ArrayDeque<>();
-
-            nextSearches.add("%d,%d".formatted(i,j));
-            while (!nextSearches.isEmpty()) {
-                String currSearch = nextSearches.poll();
-                
-                // if the currSearch has already been visited before
-                if (visited.contains(currSearch)) {
-                    continue;
-                }
-                
-                visited.add(currSearch);
-                ++this.displayedCells;
-                this.displayBoard[i][j] = this.mineField[i][j];
-
-                // if the currSearch cell is a number than I dont want to search around it
-                if (this.mineField[i][j].matches("\\+d")) {
-                    continue;
-                }
-
-                int k = Integer.parseInt(currSearch.split(",")[0]);
-                int l = Integer.parseInt(currSearch.split(",")[1]);
-                
-                for (String searchArea : searchAreas) {
-                    // get my search area offsets
-                    int a = Integer.parseInt(searchArea.split(",")[0]);
-                    int b = Integer.parseInt(searchArea.split(",")[1]);
-
-                    // get the cells around the currently looked at cell
-                    int x = k + a;
-                    int y = l + b;
-                    // check if the adjacent cells are possible to be accessed in the minefield matrix
-                    if ( (this.gridSize > x && x >= 0) && (this.gridSize > y && y >= 0) && !("*".equals(this.mineField[x][y])) ) { 
-                        nextSearches.add("%d,%d".formatted(x,y));
-                    }
-                }
-            }
+            reveal(i,j);
             return true;
         }
     }
@@ -211,12 +225,23 @@ public class Minesweeper {
         
         while (currTurn && this.displayedCells < this.gridSize * this.gridSize) {
             this.printDisplayBoard();
-            System.out.println("Select a cell (Ex: x y -> 0 0): ");
+            System.out.print("<F row col> to place a flag\nEnter q to quit\nSelect a cell <row col>: ");
+
             userInput = scanner.nextLine();
-            i = Integer.parseInt(userInput.split(" ")[0]);
-            j = Integer.parseInt(userInput.split(" ")[1]);
-            
-            currTurn = selectCell(i,j);
+            if (userInput.equalsIgnoreCase("q")) {
+                break;
+            }
+            else if (userInput.split(" ")[0].equalsIgnoreCase("f") && userInput.split(" ").length == 3) {
+                i = Integer.parseInt(userInput.split(" ")[1]);
+                j = ((int) userInput.split(" ")[2].charAt(0)) - 65;
+                this.displayBoard[i][j] = "F";
+            }
+            else {
+                i = Integer.parseInt(userInput.split(" ")[0]);
+                j = ((int) userInput.split(" ")[1].charAt(0)) - 65;
+                
+                currTurn = selectCell(i,j);
+            }
         }
         this.printMineField();
         System.out.println("GAME OVER");
@@ -246,6 +271,8 @@ public class Minesweeper {
         colors.put("8","\u001B[38;5;219m"); // pink
         colors.put(" ","\u001B[37m");       // white
         colors.put("*","\u001B[30m");       // black
+        colors.put("_","\u001B[47m");       // white background
+        colors.put("F", "\u001B[37;41m");   // white text red background
         this.gridSize = gridSize;
         this.numMines = numMines;
         this.mineField = new String[this.gridSize][this.gridSize];
@@ -258,7 +285,7 @@ public class Minesweeper {
         
         // populate empty display board
         for (String[] row : this.displayBoard) {
-            Arrays.fill(row, " ");
+            Arrays.fill(row, "_");
         }
 
         // place mines randomly in the mine field
