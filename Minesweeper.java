@@ -133,10 +133,11 @@ public class Minesweeper {
 
         String separator = "   " + "├───" + "┼───".repeat(this.gridSize - 1) + "┤";
         for (int i = 0; i < this.gridSize; i++) {
-            System.out.printf("%d  │", i);
+            System.out.print("   │");
             for (int j = 0; j < this.gridSize; j++) {
                 System.out.printf(" %s%s%s │", colors.get(this.mineField[i][j]), this.mineField[i][j], RESET);
             }
+            System.out.printf(" %d", i);
             if (i == this.gridSize - 1){
                 System.out.println("\n   └───" + "┴───".repeat(this.gridSize - 1) + "┘");
                 break;
