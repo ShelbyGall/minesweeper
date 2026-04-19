@@ -223,12 +223,13 @@ public class Minesweeper {
         int i;
         int j;
         
-        while (currTurn && this.displayedCells < this.gridSize * this.gridSize) {
+        while (currTurn && this.displayedCells < (this.gridSize * this.gridSize) - this.numMines) {
             this.printDisplayBoard();
             System.out.print("<F row col> to place a flag\nEnter q to quit\nSelect a cell <row col>: ");
 
             userInput = scanner.nextLine();
             if (userInput.equalsIgnoreCase("q")) {
+                currTurn = false;
                 break;
             }
             else if (userInput.split(" ")[0].equalsIgnoreCase("f") && userInput.split(" ").length == 3) {
@@ -244,7 +245,12 @@ public class Minesweeper {
             }
         }
         this.printMineField();
-        System.out.println("GAME OVER");
+        if (!currTurn) {
+            System.out.println("GAME OVER");
+        }
+        else {
+            System.out.println("YOU WIN!!!!!");
+        }
     }
 
     public Minesweeper(int gridSize) {
