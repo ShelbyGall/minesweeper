@@ -36,9 +36,10 @@ public class Minesweeper {
     }
 
     // Logic for adding mines in random places in the matrix
-    public void placeMines() {
+    public void placeMines(int firstI, int firstJ) {
         Random rand = new Random();
         this.minePositions = new HashSet<>();
+        String firstSelection = "%d,%d".formatted(firstI,firstJ);
 
         while (minePositions.size() < this.numMines) {
             // generate random indicies for the mine position
@@ -49,7 +50,7 @@ public class Minesweeper {
             String posStr = "%d,%d".formatted(i, j);
             // if the random indicies exist in the set then they have already  
             // been added to the minefield so retry
-            if (this.minePositions.contains(posStr)) {
+            if (this.minePositions.contains(posStr) || firstSelection.equals(posStr)) {
                 continue;
             }
             // add new mine position
@@ -218,30 +219,50 @@ public class Minesweeper {
 
     public void play() {
         boolean currTurn = true;
+        boolean firstTurn = true;
         Scanner scanner = new Scanner(System.in);
         String userInput;
         int i;
         int j;
         
-        while (currTurn && this.displayedCells < (this.gridSize * this.gridSize) - this.numMines) {
+        while (currTurn && (this.displayedCells < (this.gridSize * this.gridSize) - this.numMines) ) {
             this.printDisplayBoard();
-            System.out.print("<F row col> to place a flag\nEnter q to quit\nSelect a cell <row col>: ");
+            System.out.print("<F col row> to place a flag\nEnter q to quit\nSelect a cell <col row>: ");
 
             userInput = scanner.nextLine();
+            // if the user quits
             if (userInput.equalsIgnoreCase("q")) {
                 currTurn = false;
                 break;
             }
+            // if the user is putting down a flag
             else if (userInput.split(" ")[0].equalsIgnoreCase("f") && userInput.split(" ").length == 3) {
-                i = Integer.parseInt(userInput.split(" ")[1]);
-                j = ((int) userInput.split(" ")[2].charAt(0)) - 65;
-                this.displayBoard[i][j] = "F";
-            }
-            else {
-                i = Integer.parseInt(userInput.split(" ")[0]);
+                i = Integer.parseInt(userInput.split(" ")[2]);
                 j = ((int) userInput.split(" ")[1].charAt(0)) - 65;
+                if (this.displayBoard[i][j].equals("_")) {
+                    this.displayBoard[i][j] = "F";
+                }
+                else if (this.displayBoard[i][j].equals("F")) {
+                    this.displayBoard[i][j] = "_";
+                }
+            }
+            // normal cell selection
+            else {
+                i = Integer.parseInt(userInput.split(" ")[1]);
+                j = ((int) userInput.split(" ")[0].charAt(0)) - 65;
+
+                if (firstTurn) {
+                    // place mines randomly in the mine field
+                    placeMines(i,j);
+
+                    // populate the numbers to show how many mines each cell touches
+                    populateAdjacentNumbers();
+                    firstTurn = false;
+                }
                 
-                currTurn = selectCell(i,j);
+                if (!this.displayBoard[i][j].equals("F")) {
+                    currTurn = selectCell(i,j);
+                }
             }
         }
         this.printMineField();
@@ -293,12 +314,6 @@ public class Minesweeper {
         for (String[] row : this.displayBoard) {
             Arrays.fill(row, "_");
         }
-
-        // place mines randomly in the mine field
-        placeMines();
-
-        // populate the numbers to show how many mines each cell touches
-        populateAdjacentNumbers();
     }
 
 }
