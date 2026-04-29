@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Queue;
 import java.util.ArrayDeque;
 import java.util.Scanner;
+import java.time.LocalTime;
 
 
 public class Minesweeper {
@@ -198,53 +199,78 @@ public class Minesweeper {
      * false -> game has ended
      */ 
     public boolean selectCell(int i, int j) {
-        // if the selected cell is a number
-        if (this.mineField[i][j].matches("\\d")) {
-            this.displayBoard[i][j] = this.mineField[i][j];
-            ++this.displayedCells;
-            return true;
+        if (!this.displayBoard[i][j].equals("F")) {
+            // if the selected cell is a number
+            if (this.mineField[i][j].matches("\\d")) {
+                this.displayBoard[i][j] = this.mineField[i][j];
+                ++this.displayedCells;
+                return true;
+            }
+            // if the selected cell is a mine
+            else if (this.mineField[i][j].equals("*")) {
+                this.displayBoard[i][j] = this.mineField[i][j];
+                ++this.displayedCells;
+                return false;
+            }
+            // else the cell is " " therefore reveal for all adjacent spaces
+            else {
+                reveal(i,j);
+                return true;
+            }
         }
-        // if the selected cell is a mine
-        else if (this.mineField[i][j].equals("*")) {
-            this.displayBoard[i][j] = this.mineField[i][j];
-            ++this.displayedCells;
-            return false;
+        return true;
+    }
+
+    public void flagCell(int i, int j) {
+        if (this.displayBoard[i][j].equals("_")) {
+            this.displayBoard[i][j] = "F";
         }
-        // else the cell is " " therefore reveal for all adjacent spaces
-        else {
-            reveal(i,j);
-            return true;
+        else if (this.displayBoard[i][j].equals("F")) {
+            this.displayBoard[i][j] = "_";
         }
     }
 
+    public static boolean validInput(String userInput) {
+        return (
+                (userInput.equalsIgnoreCase("q"))
+                ||
+                (userInput.split(" ").length == 2 && Character.isLetter(userInput.split(" ")[0].charAt(0)) && Character.isDigit(userInput.split(" ")[1].charAt(0))) 
+                || 
+                (userInput.split(" ").length == 3 && userInput.split(" ")[0].equalsIgnoreCase("F") && Character.isLetter(userInput.split(" ")[1].charAt(0)) && Character.isDigit(userInput.split(" ")[2].charAt(0))) 
+                );  
+    }
+
     public void play() {
-        boolean currTurn = true;
+        boolean stillPlaying = true;
         boolean firstTurn = true;
         Scanner scanner = new Scanner(System.in);
         String userInput;
         int i;
         int j;
         
-        while (currTurn && (this.displayedCells < (this.gridSize * this.gridSize) - this.numMines) ) {
+        LocalTime startTime = LocalTime.now();
+        
+        while (stillPlaying && (this.displayedCells < (this.gridSize * this.gridSize) - this.numMines) ) {
             this.printDisplayBoard();
-            System.out.print("<F col row> to place a flag\nEnter q to quit\nSelect a cell <col row>: ");
+            System.out.print("Options:\n\t- <q> to quit\n\t- <F col row> to place a flag\n\t- <col row> to select a cell\n:");
 
             userInput = scanner.nextLine();
+
+            // validate input
+            if (!validInput(userInput)) {
+                continue;
+            }
+
             // if the user quits
             if (userInput.equalsIgnoreCase("q")) {
-                currTurn = false;
+                stillPlaying = false;
                 break;
             }
             // if the user is putting down a flag
             else if (userInput.split(" ")[0].equalsIgnoreCase("f") && userInput.split(" ").length == 3) {
                 i = Integer.parseInt(userInput.split(" ")[2]);
                 j = ((int) userInput.split(" ")[1].charAt(0)) - 65;
-                if (this.displayBoard[i][j].equals("_")) {
-                    this.displayBoard[i][j] = "F";
-                }
-                else if (this.displayBoard[i][j].equals("F")) {
-                    this.displayBoard[i][j] = "_";
-                }
+                flagCell(i,j);
             }
             // normal cell selection
             else {
@@ -260,18 +286,19 @@ public class Minesweeper {
                     firstTurn = false;
                 }
                 
-                if (!this.displayBoard[i][j].equals("F")) {
-                    currTurn = selectCell(i,j);
-                }
+                stillPlaying = selectCell(i,j);
             }
         }
+
+        LocalTime endTime = LocalTime.now();
         this.printMineField();
-        if (!currTurn) {
-            System.out.println("GAME OVER");
+        if (!stillPlaying) {
+            System.out.printf("%s%s%s\n", "\u001B[31m", "GAME OVER", RESET);
         }
         else {
-            System.out.println("YOU WIN!!!!!");
+            System.out.printf("%s%s%s\n", "\u001B[32m", "YOU WIN!", RESET);
         }
+        System.out.printf("%s: %s", "Elapsed Time", endTime.minusNanos(startTime.toNanoOfDay()).toString());
     }
 
     public Minesweeper(int gridSize) {
